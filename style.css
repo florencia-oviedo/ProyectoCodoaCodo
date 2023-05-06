@@ -1,0 +1,51 @@
+body {
+    overflow-x: hidden;
+}
+
+#nav {
+    background-color: #353A40;
+    color: white;
+    justify-content: space-around;
+}
+
+#nav div p {
+    font-size: 1.2em;
+}
+
+#sub-title {
+    background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url(assets/ba1.jpg);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 900px;
+    color: white;
+}
+
+.img-logo {
+    width: 100px;
+}
+
+#tercer-container {
+    background-color: #353A40;
+}
+
+#btn-cuarto-container {
+    background-color: #91cc2a;
+}
+
+#footer {
+    background-color: #1E5170;
+}
+
+#bold {
+    font-weight: 600;
+}
+
+#font-chico {
+    font-size: 15px;
+}
+
+.dotted-underline {
+    text-decoration: none;
+    border-bottom: 2px dotted black;
+  }
