@@ -1,0 +1,51 @@
+body {
+    overflow-x: hidden;
+    /* background-color: darkgray; */
+}
+
+#nav {
+    background-color: #353A40;
+    color: white;
+    justify-content: space-around;
+}
+
+#nav div p {
+    font-size: 1.2em;
+}
+
+.img-logo {
+    width: 100px;
+}
+
+#footer {
+    background-color: #1E5170;
+}
+
+#pagar {
+    background-color: rgb(163, 209, 255);
+    border: none;
+}
+
+#btn-borrar, #btn-resumen {
+    background-color: rgb(134, 202, 57);
+    border: none;
+}
+
+#documentacion {
+    color: gray;
+}
+
+#border-card-1 {
+    padding: 0;
+    border: 1px solid blue;
+}
+
+#border-card-2 {
+    padding: 0;
+    border: 1px solid green;
+}
+
+#border-card-3 {
+    padding: 0;
+    border: 1px solid rgb(255, 200, 0);
+}

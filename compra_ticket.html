@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
+    <link rel="stylesheet" href="compra_ticket.css">
+    <title>Document</title>
+</head>
+<body>
+    <div class="container-fluid align-items-center justify-content-center m-0 p-0 mb-5">
+        <div class="row align-items-center" id="nav">
+            <div class="col-2 d-flex align-items-center justify-content-start ps-3">
+                <a href="index.html"><img src="assets/codoacodo.png" alt="Logo de codo a codo" class="img-logo"></a>
+                <p class="m-0">Conf Bs As</p>
+            </div>
+            <div class="col-8 text-end">
+                <ul class="d-flex list-unstyled align-items-center justify-content-end pe-3 gap-5 m-0">
+                    <li><a href="#" class="text-decoration-none text-white">La conferencia</a></li>
+                    <li><a href="#" class="text-decoration-none text-secondary">Los oradores</a></li>
+                    <li><a href="#" class="text-decoration-none text-secondary">El lugar y la fecha</a></li>
+                    <li><a href="#" class="text-decoration-none text-secondary">Conviértete en orador</a></li>
+                    <li><a href="compra_ticket.html" class="text-decoration-none text-success link-hover">Comprar tickets</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="container mb-5">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card" id="border-card-1">
+                    <div class="card-body">
+                        <h5 id="bold" class="card-title text-center">Estudiante</h5>
+                        <p class="card-text">Tienen un descuento</p>
+                        <p class="card-text text-center">80%</p>
+                        <p class="card-text" id="documentacion">* Presentar documentación</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card" id="border-card-2">
+                    <div class="card-body">
+                        <h5 id="bold" class="card-title text-center">Trainee</h5>
+                        <p class="card-text">Tienen un descuento</p>
+                        <p class="card-text text-center">50%</p>
+                        <p class="card-text" id="documentacion">* Presentar documentación</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card" id="border-card-3">
+                    <div class="card-body">
+                        <h5 id="bold" class="card-title text-center">Junior</h5>
+                        <p class="card-text">Tienen un descuento</p>
+                        <p class="card-text text-center">15%</p>
+                        <p class="card-text" id="documentacion">* Presentar documentación</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container mb-4">
+        <div class="row">
+            <div class="col text-center">
+                <h6 id="font-chico">VENTA</h6>
+                <h2 id="bold">VALOR DE TICKET $200</h2>
+            </div>
+            <div class="row mb-3">
+                <div class="col-6">
+                    <input type="text" placeholder="Nombre" class="form-control">
+                </div>
+                <div class="col-6">
+                    <input type="text" placeholder="Apellido" class="form-control">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-12">
+                    <input type="text" placeholder="Correo" class="form-control">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-6">
+                    <label for="cantidad">Cantidad</label>
+                    <input type="text" name="cantidad" placeholder="Cantidad" class="form-control" id="cantidad">
+                </div>
+                <div class="col-6">
+                    <label for="estudiante">Categoria</label>
+                    <select name="categoria" class="form-select" id="categoria">
+                        <option selected>Selecciona una categoría...</option>
+                        <option value="categoria1">Estudiante</option>
+                        <option value="categoria2">Trainee</option>
+                        <option value="categoria3">Junior</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-12">
+                    <input id="pagar" type="text" name="estudiante" placeholder="Total a pagar: $" class="form-control" disabled>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-6">
+                    <button type="submit" id="btn-borrar" class="btn btn-success btn-block text-white w-100">Borrar</button>
+                </div>
+                <div class="col-6">
+                    <button type="submit" id="btn-resumen" onclick="resumen()" class="btn btn-success btn-block text-white w-100">Resumen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container-fluid">
+        <div id="footer" class="row">
+            <div class="col">
+                <ul class="list-unstyled d-flex justify-content-evenly align-items-center py-4 pb-3 m-0">
+                    <li><a href="#" class="text-decoration-none text-white">Preguntas frecuentes</a></li>
+                    <li><a href="#" class="text-decoration-none text-white">Contáctanos</a></li>
+                    <li><a href="#" class="text-decoration-none text-white">Prensa</a></li>
+                    <li><a href="#" class="text-decoration-none text-white">Conferencias</a></li>
+                    <li><a href="#" class="text-decoration-none text-white">Términos y condiciones</a></li>
+                    <li><a href="#" class="text-decoration-none text-white">Privacidad</a></li>
+                    <li><a href="#" class="text-decoration-none text-white">Estudiantes</a></li>
+                </ul>
+            </div>
+            <div class="row text-white m-0 text-center">
+                <p class="m-0">Derechos Reservados: Florencia Oviedo</p>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous"></script>
+    <script src="script.js"></script>
+</body>
+</html>
