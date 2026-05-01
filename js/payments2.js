@@ -1,89 +1,121 @@
-// js/test.js - Simulador simple de pagos para testear
+// js/payments2.js - Mini-módulo de facturación y cobros similar a payments.js
 
 /**
- * Valida un número de tarjeta de crédito de 16 dígitos.
- * @param {string} cardNumber
+ * Valida un código de moneda ISO 4217.
+ * @param {string} currency
  * @returns {boolean}
  */
-function validateCardNumber(cardNumber) {
-  return typeof cardNumber === 'string' && /^\d{16}$/.test(cardNumber);
+function validateCurrencyCode(currency) {
+  return typeof currency === 'string' && /^[A-Z]{3}$/.test(currency);
 }
 
 /**
- * Valida un CVV de 3 dígitos.
- * @param {string} cvv
- * @returns {boolean}
+ * Calcula el total de una lista de items de factura.
+ * @param {Array<{description: string, quantity: number, unitPrice: number}>} items
+ * @returns {number}
  */
-function validateCvv(cvv) {
-  return typeof cvv === 'string' && /^\d{3}$/.test(cvv);
+function calculateInvoiceTotal(items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return 0;
+  }
+
+  return items.reduce((total, item) => {
+    const quantity = Number(item.quantity) || 0;
+    const unitPrice = Number(item.unitPrice) || 0;
+    return total + quantity * unitPrice;
+  }, 0);
 }
 
 /**
- * Procesa un pago de prueba.
- * @param {number} amount
- * @param {string} cardNumber
- * @param {string} cvv
- * @returns {{success: boolean, transactionId?: string, error?: string, amount?: number, status?: string}}
+ * Genera un número de factura único de prueba.
+ * @returns {string}
  */
-function processTestPayment(amount, cardNumber, cvv) {
-  if (typeof amount !== 'number' || amount <= 0) {
-    return { success: false, error: 'Monto inválido: debe ser mayor que 0' };
+function generateInvoiceNumber() {
+  return 'INV-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+}
+
+/**
+ * Crea una factura simulada para prueba.
+ * @param {{name: string, email: string}} customer
+ * @param {Array<{description: string, quantity: number, unitPrice: number}>} items
+ * @param {string} [currency='ARS']
+ * @returns {{success: boolean, invoice?: object, error?: string}}
+ */
+function createInvoice(customer, items, currency = 'ARS') {
+  if (!customer || typeof customer.name !== 'string' || customer.name.trim() === '') {
+    return { success: false, error: 'Cliente inválido' };
   }
 
-  if (!validateCardNumber(cardNumber)) {
-    return { success: false, error: 'Número de tarjeta inválido: debe tener 16 dígitos' };
+  if (!Array.isArray(items) || items.length === 0) {
+    return { success: false, error: 'La factura debe contener al menos un ítem' };
   }
 
-  if (!validateCvv(cvv)) {
-    return { success: false, error: 'CVV inválido: debe tener 3 dígitos' };
+  if (!validateCurrencyCode(currency)) {
+    return { success: false, error: 'Código de moneda inválido' };
   }
 
-  const transactionId = 'TEST-TXN-' + Math.random().toString(36).slice(2, 10).toUpperCase();
+  const total = calculateInvoiceTotal(items);
+  const invoiceNumber = generateInvoiceNumber();
 
   return {
     success: true,
-    transactionId,
-    amount,
-    status: 'approved'
+    invoice: {
+      invoiceNumber,
+      customer: {
+        name: customer.name,
+        email: customer.email || '',
+      },
+      items: items.map(item => ({
+        description: item.description || '',
+        quantity: Number(item.quantity) || 0,
+        unitPrice: Number(item.unitPrice) || 0,
+        lineTotal: (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
+      })),
+      currency,
+      total,
+      issuedAt: new Date().toISOString(),
+      status: 'pending'
+    }
   };
 }
 
 /**
- * Simula un reembolso de prueba.
- * @param {string} transactionId
- * @param {number} amount
- * @returns {{success: boolean, refundId?: string, error?: string, status?: string}}
+ * Aplica un descuento porcentual a una factura de prueba.
+ * @param {object} invoice
+ * @param {number} discountPercent
+ * @returns {{success: boolean, invoice?: object, error?: string}}
  */
-function refundTestPayment(transactionId, amount) {
-  if (!transactionId) {
-    return { success: false, error: 'ID de transacción requerido' };
+function applyDiscount(invoice, discountPercent) {
+  if (!invoice || typeof invoice.total !== 'number') {
+    return { success: false, error: 'Factura inválida' };
   }
 
-  if (typeof amount !== 'number' || amount <= 0) {
-    return { success: false, error: 'Monto de reembolso inválido' };
+  if (typeof discountPercent !== 'number' || discountPercent < 0 || discountPercent > 100) {
+    return { success: false, error: 'Descuento inválido' };
   }
 
-  const refundId = 'TEST-REF-' + Math.random().toString(36).slice(2, 10).toUpperCase();
+  const discountAmount = invoice.total * (discountPercent / 100);
+  const newTotal = Math.max(0, invoice.total - discountAmount);
 
   return {
     success: true,
-    refundId,
-    originalTransactionId: transactionId,
-    amount,
-    status: 'refunded'
+    invoice: {
+      ...invoice,
+      discountPercent,
+      discountAmount,
+      total: Number(newTotal.toFixed(2)),
+      status: 'discounted'
+    }
   };
 }
 
-/**
- * Mensaje de arranque para verificar que `test.js` se cargó correctamente.
- */
-function showTestStartupMessage() {
-  console.log('test.js cargado: disponible processTestPayment() y refundTestPayment()');
+function showPayments2StartupMessage() {
+  console.log('payments2.js cargado: disponible createInvoice() y applyDiscount()');
 }
 
-document.addEventListener('DOMContentLoaded', showTestStartupMessage);
+document.addEventListener('DOMContentLoaded', showPayments2StartupMessage);
 
-window.processTestPayment = processTestPayment;
-window.refundTestPayment = refundTestPayment;
-window.validateCardNumber = validateCardNumber;
-window.validateCvv = validateCvv;
+window.createInvoice = createInvoice;
+window.applyDiscount = applyDiscount;
+window.calculateInvoiceTotal = calculateInvoiceTotal;
+window.validateCurrencyCode = validateCurrencyCode;
