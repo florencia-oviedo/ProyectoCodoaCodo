@@ -160,6 +160,17 @@ class OrderProcessor {
       throw new Error('DUPLICATE_TRANSACTION: This request has already been handled.');
     }
 
+    // 21. Card Expiration Check (Simple Business Rule)
+    // Basic check to ensure the payment instrument is not expired
+    if (paymentData.metadata?.expiryDate) {
+      const [month, year] = paymentData.metadata.expiryDate.split('/').map(Number);
+      const expiry = new Date(year, month - 1);
+      if (expiry < new Date()) {
+        logger.warn(`Transaction rejected: Card expired for user ${user.id}`);
+        throw new Error('CARD_EXPIRED: The payment method has reached its expiration date.');
+      }
+    }
+
     // 8. Currency Consistency
     if (user.accountCurrency && user.accountCurrency !== paymentData.currency) {
       throw new Error('CURRENCY_MISMATCH: Payment must match account currency.');
