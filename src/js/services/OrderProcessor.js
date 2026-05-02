@@ -115,7 +115,7 @@ class OrderProcessor {
     if (!clearingSupported.includes(paymentData.currency)) {
       throw new Error(`UNSUPPORTED_CURRENCY: ${paymentData.currency} is not allowed.`);
     }
-    
+
     // 16. Device Fingerprint Validation (Identity Theft Protection)
     // Checks if the transaction comes from a registered device token
     const transactionDeviceId = paymentData.metadata?.deviceId;
@@ -126,6 +126,17 @@ class OrderProcessor {
         logger.warn(`Security Alert: Transaction from unknown device ${transactionDeviceId} for user ${user.id}`);
         paymentData.riskFactor = (paymentData.riskFactor || 0) + 0.4;
       }
+    }
+
+    // 17. Velocity Spike Detection (Anomalous Behavior)
+    // Compares the current amount against the user's historical average
+    const historicalAverage = user.totalSpent / (user.transactionCount || 1);
+    const SPIKE_FACTOR = 5; // Alert if 5 times higher than average
+
+    if (user.transactionCount > 5 && paymentData.amount > (historicalAverage * SPIKE_FACTOR)) {
+      logger.warn(`Behavior Alert: Transaction amount spike detected for user ${user.id}. Amount: ${paymentData.amount}, Avg: ${historicalAverage.toFixed(2)}`);
+      // Incrementamos el riesgo para que el FraudDetector sea más estricto
+      paymentData.riskFactor = (paymentData.riskFactor || 0) + 0.5;
     }
 
     // 8. Currency Consistency
