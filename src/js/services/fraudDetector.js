@@ -1,27 +1,35 @@
-// fraudDetector.js - Detector de fraude ficticio para testing
+// fraudDetector.js - Mock Fraud Detection Service for Testing
 
 class FraudDetector {
-  async analyzeTransaction(transactionData) {
-    // Simular análisis de fraude
-    // Retornar score entre 0 y 1
-    // Alto score = alta probabilidad de fraude
+  /**
+   * Analyze transaction for potential fraud
+   * Returns a score between 0 and 1 (High score = high fraud probability)
+   */
+  async analyzeTransaction(user, paymentData) {
+    let score = 0.1; // Base low score
 
-    let score = 0.1; // Base score bajo
-
-    // Aumentar score basado en factores
-    if (transactionData.amount > 10000) {
+    // Increase score based on transaction amount
+    if (paymentData.amount > 10000) {
       score += 0.3;
     }
 
-    if (transactionData.userHistory && transactionData.userHistory.length > 10) {
-      score -= 0.1; // Usuarios con historial tienen score más bajo
+    // Decrease score for established users with transaction history
+    if (user.transactionCount && user.transactionCount > 10) {
+      score -= 0.1;
     }
 
-    // Simular score aleatorio
-    score += Math.random() * 0.5;
+    // Simulate risk factor for specific payment methods (e.g., crypto)
+    if (paymentData.paymentMethod === 'crypto') {
+      score += 0.2;
+    }
 
+    // Add some random variation for simulation purposes
+    score += Math.random() * 0.4;
+
+    // Ensure score is capped at 1.0
     return Math.min(1, score);
   }
 }
 
-module.exports = new FraudDetector();
+// Export the class so PaymentProcessor can instantiate it
+module.exports = FraudDetector;

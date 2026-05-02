@@ -2,6 +2,7 @@ const dbClient = require('./dbClient');
 const paymentGateway = require('./paymentGateway');
 const notificationService = require('./notificationService');
 const logger = require('./logger');
+const FraudDetector = require('./fraudDetector');
 
 class PaymentProcessor {
   constructor() {
@@ -52,6 +53,13 @@ class PaymentProcessor {
     if (recentTransactions.length >= MAX_DAILY_TRANSACTIONS) {
        logger.error(`Fraud Prevention: User ${user.id} exceeded daily transaction frequency`);
        throw new Error('RATE_LIMIT_EXCEEDED: Too many transactions in a short period. Please try again tomorrow.');
+    }
+
+    // NEW VALIDATION: Advanced Fraud Detection via FraudDetector class[cite: 1]
+    const fraudScore = await this.fraudDetector.analyzeTransaction(user, paymentData);
+    if (fraudScore > 0.8) {
+      await this.handleFraudulentTransaction(user, paymentData, fraudScore);
+      throw new Error('FRAUD_DETECTION_ALARM: Transaction rejected by security protocols');
     }
 
     //Ventana de mantenimiento (3 AM a 4 AM)
