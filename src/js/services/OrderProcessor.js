@@ -115,6 +115,18 @@ class OrderProcessor {
     if (!clearingSupported.includes(paymentData.currency)) {
       throw new Error(`UNSUPPORTED_CURRENCY: ${paymentData.currency} is not allowed.`);
     }
+    
+    // 16. Device Fingerprint Validation (Identity Theft Protection)
+    // Checks if the transaction comes from a registered device token
+    const transactionDeviceId = paymentData.metadata?.deviceId;
+    if (transactionDeviceId && user.deviceTokens && user.deviceTokens.length > 0) {
+      const isKnownDevice = user.deviceTokens.includes(transactionDeviceId);
+      if (!isKnownDevice) {
+        // We don't block it (to allow new devices), but we flag it for the FraudDetector
+        logger.warn(`Security Alert: Transaction from unknown device ${transactionDeviceId} for user ${user.id}`);
+        paymentData.riskFactor = (paymentData.riskFactor || 0) + 0.4;
+      }
+    }
 
     // 8. Currency Consistency
     if (user.accountCurrency && user.accountCurrency !== paymentData.currency) {
