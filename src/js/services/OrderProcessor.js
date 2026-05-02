@@ -62,6 +62,14 @@ class OrderProcessor {
       logger.warn(`Transaction Denied: Insufficient balance for user ${user.id}. Available: ${user.balance}, Required: ${paymentData.amount}`);
       throw new Error('INSUFFICIENT_FUNDS: Your account balance is too low for this transaction.');
     }
+
+    // 13. Minimum Transaction Threshold
+    // Prevents processing micro-transactions that are not cost-effective
+    const ABSOLUTE_MIN_AMOUNT = 1.00; // Define your threshold
+    if (paymentData.amount < ABSOLUTE_MIN_AMOUNT) {
+      logger.warn(`Business Rule: Transaction of ${paymentData.amount} rejected for being below the minimum threshold.`);
+      throw new Error(`TRANSACTION_TOO_SMALL: The minimum amount allowed is ${ABSOLUTE_MIN_AMOUNT} ${paymentData.currency}.`);
+    }
     
     // 1. Integrity Validation: Ensure idempotency and required data
     if (!paymentData.idempotencyKey || !paymentData.amount) {
