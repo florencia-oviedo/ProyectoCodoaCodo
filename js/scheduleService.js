@@ -116,8 +116,41 @@ function getScheduleSummary(schedule) {
   return `Horario con ${totalSessions} sesión(es), duración total ${totalDuration} minutos.`;
 }
 
+/**
+ * Elimina una sesión del horario por ID.
+ * @param {object} schedule
+ * @param {string} sessionId
+ * @returns {{success: boolean, schedule?: object, error?: string}}
+ */
+function removeSessionFromSchedule(schedule, sessionId) {
+  if (!schedule || !Array.isArray(schedule.sessions)) {
+    return { success: false, error: 'Horario inválido' };
+  }
+
+  if (typeof sessionId !== 'string' || sessionId.trim() === '') {
+    return { success: false, error: 'ID de sesión inválido' };
+  }
+
+  const sessionIndex = schedule.sessions.findIndex(session => session.sessionId === sessionId);
+
+  if (sessionIndex === -1) {
+    return { success: false, error: 'Sesión no encontrada' };
+  }
+
+  const updatedSessions = [...schedule.sessions];
+  updatedSessions.splice(sessionIndex, 1);
+
+  return {
+    success: true,
+    schedule: {
+      ...schedule,
+      sessions: updatedSessions
+    }
+  };
+}
+
 function showScheduleServiceStartupMessage() {
-  console.log('scheduleService.js cargado: disponible createSchedule(), addSessionToSchedule(), etc.');
+  console.log('scheduleService.js cargado: disponible createSchedule(), addSessionToSchedule(), removeSessionFromSchedule(), etc.');
 }
 
 document.addEventListener('DOMContentLoaded', showScheduleServiceStartupMessage);
@@ -126,3 +159,4 @@ window.createSchedule = createSchedule;
 window.addSessionToSchedule = addSessionToSchedule;
 window.getSortedSessions = getSortedSessions;
 window.getScheduleSummary = getScheduleSummary;
+window.removeSessionFromSchedule = removeSessionFromSchedule;
