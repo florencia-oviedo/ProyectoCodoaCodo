@@ -1,3 +1,14 @@
+const dbClient = require('./dbClient');
+const paymentGateway = require('./paymentGateway');
+const notificationService = require('./notificationService');
+const logger = require('./logger');
+
+class PaymentProcessor {
+  constructor() {
+    this.maxRetries = 3;
+    this.retryDelay = 1000;
+  }
+
   /**
    * Check if user has sufficient balance and hasn't exceeded limits
    */
