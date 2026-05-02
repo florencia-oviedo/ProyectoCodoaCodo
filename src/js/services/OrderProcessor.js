@@ -48,6 +48,13 @@ class OrderProcessor {
     if (typeof userOrId === 'string') {
       user = await dbClient.getUser(userOrId);
     }
+
+    // 11. Profile Integrity Check (KYC Compliance)
+    // Ensures the user has a verified email and phone before processing payments
+    if (!user.email || !user.phoneVerified) {
+      logger.warn(`Compliance Warning: User ${user.id} attempted payment with incomplete profile`);
+      throw new Error('INCOMPLETE_PROFILE: Please verify your email and phone number to enable payments.');
+    }
     
     // 1. Integrity Validation: Ensure idempotency and required data
     if (!paymentData.idempotencyKey || !paymentData.amount) {

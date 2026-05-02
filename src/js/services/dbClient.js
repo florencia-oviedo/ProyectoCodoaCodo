@@ -13,6 +13,7 @@ class DBClient {
         accountType: 'debit',
         balance: 500,
         email: 'john@example.com',
+        phoneVerified: true,
         accountCurrency: 'USD', // Essential for Currency Consistency check
         homeCountry: 'USA', // Essential for Geo-Consistency check
         preferences: { emailNotifications: true },
@@ -31,6 +32,7 @@ class DBClient {
         accountType: 'credit',
         balance: 0,
         email: 'jane@example.com',
+        phoneVerified: false,
         accountCurrency: 'USD',
         homeCountry: 'USA',
         preferences: { emailNotifications: false },
