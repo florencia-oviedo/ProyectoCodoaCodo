@@ -109,8 +109,25 @@ function applyDiscount(invoice, discountPercent) {
   };
 }
 
+/**
+ * Obtiene un resumen de la factura.
+ * @param {object} invoice
+ * @returns {string}
+ */
+function getInvoiceSummary(invoice) {
+  if (!invoice || typeof invoice !== 'object') {
+    return 'Factura inválida';
+  }
+
+  const itemCount = invoice.items ? invoice.items.length : 0;
+  const total = invoice.total || 0;
+  const currency = invoice.currency || 'ARS';
+
+  return `Factura ${invoice.invoiceNumber}: ${itemCount} item(s), total ${total} ${currency}, estado ${invoice.status || 'unknown'}.`;
+}
+
 function showPayments2StartupMessage() {
-  console.log('payments2.js cargado: disponible createInvoice() y applyDiscount()');
+  console.log('payments2.js cargado: disponible createInvoice(), applyDiscount(), getInvoiceSummary()');
 }
 
 document.addEventListener('DOMContentLoaded', showPayments2StartupMessage);
@@ -119,3 +136,4 @@ window.createInvoice = createInvoice;
 window.applyDiscount = applyDiscount;
 window.calculateInvoiceTotal = calculateInvoiceTotal;
 window.validateCurrencyCode = validateCurrencyCode;
+window.getInvoiceSummary = getInvoiceSummary;

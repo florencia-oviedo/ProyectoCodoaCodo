@@ -232,3 +232,15 @@ window.getSortedSessions = getSortedSessions;
 window.getScheduleSummary = getScheduleSummary;
 window.removeSessionFromSchedule = removeSessionFromSchedule;
 window.updateSession = updateSession;
+
+// Exportar para tests
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    createSchedule,
+    addSessionToSchedule,
+    getSortedSessions,
+    getScheduleSummary,
+    removeSessionFromSchedule,
+    updateSession
+  };
+}
