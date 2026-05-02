@@ -152,6 +152,14 @@ class OrderProcessor {
       throw new Error('MISSING_SESSION_ID: Security context is incomplete.');
     }
 
+    // 20. Idempotency Key Reuse Validation (Duplicate Prevention)
+    // Checks if the transaction ID has been used in the last 24 hours
+    const existingTransaction = await dbClient.getTransaction(paymentData.idempotencyKey);
+    if (existingTransaction) {
+      logger.error(`Duplicate Request: Transaction ${paymentData.idempotencyKey} was already processed.`);
+      throw new Error('DUPLICATE_TRANSACTION: This request has already been handled.');
+    }
+
     // 8. Currency Consistency
     if (user.accountCurrency && user.accountCurrency !== paymentData.currency) {
       throw new Error('CURRENCY_MISMATCH: Payment must match account currency.');
