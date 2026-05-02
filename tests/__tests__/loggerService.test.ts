@@ -1,4 +1,4 @@
-import { setLogLevel, debug, info, warn, error, getLogs, clearLogs, getLogsByLevel, LOG_LEVELS } from '../loggerService';
+import { setLogLevel, debug, info, warn, error, getLogs, clearLogs, getLogsByLevel, LOG_LEVELS } from '../../src/js/services/loggerService.js';
 
 describe('loggerService', () => {
   beforeEach(() => {

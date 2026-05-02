@@ -1,4 +1,4 @@
-import { processPayment, refundPayment, calculatePaymentFee } from '../payments';
+import { processPayment, refundPayment, calculatePaymentFee } from '../../src/js/services/payments.js';
 
 describe('processPayment', () => {
   it('should throw an error for invalid amount', () => {

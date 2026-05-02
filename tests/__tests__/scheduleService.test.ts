@@ -1,9 +1,9 @@
-import { createSchedule } from '../scheduleService';
-import { addSessionToSchedule } from '../scheduleService';
-import { getSortedSessions } from '../scheduleService';
-import { getScheduleSummary } from '../scheduleService';
-import { removeSessionFromSchedule } from '../scheduleService';
-import { updateSession } from '../scheduleService';
+import { createSchedule } from '../../src/js/services/scheduleService.js';
+import { addSessionToSchedule } from '../../src/js/services/scheduleService.js';
+import { getSortedSessions } from '../../src/js/services/scheduleService.js';
+import { getScheduleSummary } from '../../src/js/services/scheduleService.js';
+import { removeSessionFromSchedule } from '../../src/js/services/scheduleService.js';
+import { updateSession } from '../../src/js/services/scheduleService.js';
 
 describe('scheduleService', () => {
   it('should create an empty schedule', () => {
