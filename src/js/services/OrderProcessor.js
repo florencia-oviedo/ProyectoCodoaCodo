@@ -62,7 +62,17 @@ class OrderProcessor {
       throw new Error(`ACCOUNT_INACTIVE: Transaction rejected. Current status: ${user.status || 'unknown'}`);
     }
 
-    // NUEVA VALIDACIÓN: Session Expiry (Security)
+    // NEW VALIDATION: User Risk Tier Enforcement
+    // Restricts high-value transactions for non-VIP or unverified risk profiles
+    const RISK_THRESHOLD = 5000;
+    const restrictedTiers = ['guest', 'regular', 'unverified'];
+
+    if (paymentData.amount > RISK_THRESHOLD && restrictedTiers.includes(user.tier)) {
+      logger.warn(`Risk Management: High-value transaction blocked for ${user.tier} user: ${user.id}`);
+      throw new Error(`RISK_LIMIT_REACHED: Transactions above ${RISK_THRESHOLD} require a VIP or Premium account tier.`);
+    }
+
+    //VALIDACIÓN: Session Expiry (Security)
     // Ensures the transaction request is processed within a valid time window
     const sessionTimeout = 15 * 60 * 1000; // 15 minutes in milliseconds
     const requestTimestamp = paymentData.metadata?.timestamp;
