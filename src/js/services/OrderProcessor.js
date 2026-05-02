@@ -40,9 +40,15 @@ class PaymentProcessor {
    */
   async executePaymentWithRetry(user, paymentData) {
     let lastError;
-    // NUEVO: Validación de integridad antes de empezar los reintentos
+    //Validación de integridad antes de empezar los reintentos
     if (!paymentData.idempotencyKey && !paymentData.amount) {
        throw new Error('UNSAFE_TRANSACTION: Missing required integrity keys');
+    }
+
+    // NUEVA VALIDACIÓN: Monedas soportadas
+    const supportedCurrencies = ['USD', 'EUR', 'ARS'];
+    if (!supportedCurrencies.includes(paymentData.currency)) {
+       throw new Error(`INVALID_CURRENCY: ${paymentData.currency} is not supported`);
     }
     
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
