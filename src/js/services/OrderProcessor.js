@@ -45,13 +45,19 @@ class PaymentProcessor {
        throw new Error('UNSAFE_TRANSACTION: Missing required integrity keys');
     }
 
+    // NUEVA VALIDACIÓN: Ventana de mantenimiento (3 AM a 4 AM)
+    const currentHour = new Date().getHours();
+    if (currentHour === 3) {
+       throw new Error('SERVICE_UNAVAILABLE: System is under scheduled maintenance between 03:00 and 04:00');
+    }
+
     // Monedas soportadas
     const supportedCurrencies = ['USD', 'EUR', 'ARS'];
     if (!supportedCurrencies.includes(paymentData.currency)) {
        throw new Error(`INVALID_CURRENCY: ${paymentData.currency} is not supported`);
     }
 
-    // NUEVA VALIDACIÓN: Límites de monto (Min/Max)
+    //Límites de monto (Min/Max)
     const MIN_AMOUNT = 0.50;
     const MAX_AMOUNT = 50000;
     if (paymentData.amount < MIN_AMOUNT || paymentData.amount > MAX_AMOUNT) {
