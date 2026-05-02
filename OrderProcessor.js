@@ -36,7 +36,8 @@ class OrderProcessor {
       // Calcular total con descuentos complejos
       const subtotal = this.calculateSubtotal(items);
       const discounts = this.calculateDiscounts(subtotal, user, new Date(), orderData.coupon);
-      const total = this.applyDiscounts(subtotal, discounts);
+      const taxes = this.calculateTaxes(orderData.location, subtotal - discounts.total);
+      const total = this.applyDiscounts(subtotal, discounts) + taxes;
 
       // Procesar pago
       const paymentResult = await this.processPayment(total, paymentMethod);
@@ -54,6 +55,7 @@ class OrderProcessor {
         items,
         subtotal,
         discounts,
+        taxes,
         total,
         paymentId: paymentResult.transactionId
       });
@@ -63,8 +65,10 @@ class OrderProcessor {
       return {
         success: true,
         orderId,
-        total,
-        discounts
+        subtotal,
+        discounts,
+        taxes,
+        total
       };
 
     } catch (error) {
@@ -103,6 +107,13 @@ class OrderProcessor {
     // Validar cupón si está presente
     if (orderData.coupon) {
       this.validateCoupon(orderData.coupon);
+    }
+
+    // Validar ubicación si está presente (para impuestos)
+    if (orderData.location) {
+      if (typeof orderData.location !== 'string' || orderData.location.length === 0) {
+        throw new Error('Ubicación inválida: debe ser una cadena no vacía');
+      }
     }
   }
 
@@ -205,6 +216,27 @@ class OrderProcessor {
     discounts.total = Math.round((discounts.vip + discounts.day + discounts.coupon) * 100) / 100;
 
     return discounts;
+  }
+
+  /**
+   * Calcula impuestos basados en la ubicación
+   * @param {string} location
+   * @param {number} subtotal
+   * @returns {number}
+   */
+  calculateTaxes(location, subtotal) {
+    if (!location) return 0;
+
+    // Tasas de impuestos por ubicación (simuladas)
+    const taxRates = {
+      'US': 0.08, // 8% para EE.UU.
+      'EU': 0.20, // 20% para Europa
+      'AR': 0.21, // 21% para Argentina
+      'default': 0.10 // 10% por defecto
+    };
+
+    const rate = taxRates[location.toUpperCase()] || taxRates.default;
+    return Math.round(subtotal * rate * 100) / 100;
   }
 
   /**
