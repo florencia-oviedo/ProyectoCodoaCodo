@@ -45,10 +45,17 @@ class PaymentProcessor {
        throw new Error('UNSAFE_TRANSACTION: Missing required integrity keys');
     }
 
-    // NUEVA VALIDACIÓN: Monedas soportadas
+    // Monedas soportadas
     const supportedCurrencies = ['USD', 'EUR', 'ARS'];
     if (!supportedCurrencies.includes(paymentData.currency)) {
        throw new Error(`INVALID_CURRENCY: ${paymentData.currency} is not supported`);
+    }
+
+    // NUEVA VALIDACIÓN: Límites de monto (Min/Max)
+    const MIN_AMOUNT = 0.50;
+    const MAX_AMOUNT = 50000;
+    if (paymentData.amount < MIN_AMOUNT || paymentData.amount > MAX_AMOUNT) {
+       throw new Error(`AMOUNT_OUT_OF_RANGE: Transaction must be between ${MIN_AMOUNT} and ${MAX_AMOUNT}`);
     }
     
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
