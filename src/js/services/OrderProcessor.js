@@ -45,10 +45,16 @@ class PaymentProcessor {
        throw new Error('UNSAFE_TRANSACTION: Missing required integrity keys');
     }
 
-    // NUEVA VALIDACIÓN: Ventana de mantenimiento (3 AM a 4 AM)
+    //Ventana de mantenimiento (3 AM a 4 AM)
     const currentHour = new Date().getHours();
     if (currentHour === 3) {
        throw new Error('SERVICE_UNAVAILABLE: System is under scheduled maintenance between 03:00 and 04:00');
+    }
+
+    // NUEVA VALIDACIÓN: Métodos de pago permitidos
+    const allowedMethods = ['credit_card', 'debit_card', 'bank_transfer', 'crypto'];
+    if (!allowedMethods.includes(paymentData.paymentMethod)) {
+       throw new Error(`INVALID_METHOD: ${paymentData.paymentMethod} is not a valid payment method`);
     }
 
     // Monedas soportadas
