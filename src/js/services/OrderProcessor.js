@@ -51,10 +51,17 @@ class PaymentProcessor {
        throw new Error('SERVICE_UNAVAILABLE: System is under scheduled maintenance between 03:00 and 04:00');
     }
 
-    // NUEVA VALIDACIÓN: Métodos de pago permitidos
+    //Métodos de pago permitidos
     const allowedMethods = ['credit_card', 'debit_card', 'bank_transfer', 'crypto'];
     if (!allowedMethods.includes(paymentData.paymentMethod)) {
        throw new Error(`INVALID_METHOD: ${paymentData.paymentMethod} is not a valid payment method`);
+    }
+
+    // NUEVA VALIDACIÓN: Países con restricciones (Compliance)
+    const blockedCountries = ['IRN', 'PRK', 'SYR']; // ISO Codes
+    if (blockedCountries.includes(paymentData.metadata?.countryCode)) {
+       logger.warn(`Compliance Alert: Transaction blocked for country ${paymentData.metadata.countryCode}`);
+       throw new Error('COMPLIANCE_ERROR: Transaction cannot be processed from this region');
     }
 
     // Monedas soportadas
