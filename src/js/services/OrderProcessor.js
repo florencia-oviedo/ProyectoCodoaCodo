@@ -4,12 +4,12 @@ const notificationService = require('./notificationService');
 const logger = require('./logger');
 const FraudDetector = require('./fraudDetector');
 
-class PaymentProcessor {
+class OrderProcessor {
   constructor() {
     this.maxRetries = 3;
     this.retryDelay = 1000;
+    this.fraudDetector = new FraudDetector(); 
   }
-
   /**
    * Check if user has sufficient balance and hasn't exceeded limits
    */
@@ -44,6 +44,14 @@ class PaymentProcessor {
     //Validación de integridad antes de empezar los reintentos
     if (!paymentData.idempotencyKey && !paymentData.amount) {
        throw new Error('UNSAFE_TRANSACTION: Missing required integrity keys');
+    }
+
+    // NEW VALIDATION: Account Status Check
+    // Blocks transactions if the user account is not in 'active' status
+    const allowedStatuses = ['active', 'verified'];
+    if (!allowedStatuses.includes(user.status)) {
+      logger.error(`Security Alert: Blocked transaction attempt for ${user.status} user: ${user.id}`);
+      throw new Error(`ACCOUNT_INACTIVE: Transaction rejected. Current account status: ${user.status}`);
     }
 
     // Control de Frecuencia (Velocity Check)
@@ -346,6 +354,5 @@ class PaymentProcessor {
   }
 }
 
-module.exports = PaymentProcessor;
+module.exports = OrderProcessor;
 
-// Made with Bob
