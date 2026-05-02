@@ -159,16 +159,20 @@ class DBClient {
   }
 }
 
-// Singleton Instance to maintain state across tests
+// Singleton Instance
 const dbClientInstance = new DBClient();
 
-/**
- * DOUBLE-EXPORT STRATEGY: 
- * We export the instance as the default, but also export 
- * critical methods individually to satisfy the agent's 
- * generated test scope and prevent ReferenceErrors.
- */
 module.exports = dbClientInstance;
+
+// Exportaciones vinculadas y seguras
 module.exports.getUser = dbClientInstance.getUser.bind(dbClientInstance);
-module.exports.getUserTrustedIPs = dbClientInstance.getUserTrustedIPs.bind(dbClientInstance);
-module.exports.getUserTransactionsToday = dbClientInstance.getUserTransactionsToday.bind(dbClientInstance);
+
+// Estas versiones aseguran que nunca devuelvan 'undefined', evitando el error de .reduce()
+module.exports.getUserTransactionsToday = async (id) => 
+  (await dbClientInstance.getUserTransactionsToday(id)) || [];
+
+module.exports.getUserTransactionsThisMonth = async (id) => 
+  (await dbClientInstance.getUserTransactionsThisMonth(id)) || [];
+
+module.exports.getUserTrustedIPs = async (id) => 
+  (await dbClientInstance.getUserTrustedIPs(id)) || [];
