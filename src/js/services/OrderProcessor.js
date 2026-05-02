@@ -55,6 +55,13 @@ class OrderProcessor {
       logger.warn(`Compliance Warning: User ${user.id} attempted payment with incomplete profile`);
       throw new Error('INCOMPLETE_PROFILE: Please verify your email and phone number to enable payments.');
     }
+
+    // 12. Real-Time Balance Safeguard
+    // Ensures debit accounts have sufficient funds before reaching the gateway
+    if (user.accountType === 'debit' && user.balance < paymentData.amount) {
+      logger.warn(`Transaction Denied: Insufficient balance for user ${user.id}. Available: ${user.balance}, Required: ${paymentData.amount}`);
+      throw new Error('INSUFFICIENT_FUNDS: Your account balance is too low for this transaction.');
+    }
     
     // 1. Integrity Validation: Ensure idempotency and required data
     if (!paymentData.idempotencyKey || !paymentData.amount) {
