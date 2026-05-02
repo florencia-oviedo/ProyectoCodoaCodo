@@ -7,13 +7,14 @@ class DBClient {
         id: 'user1',
         name: 'John Doe',
         tier: 'VIP',
-        status: 'active', // Essential for the Account Status Validation
+        status: 'active', // Essential for Account Status Validation
         dailyLimit: 1000,
         monthlyLimit: 5000,
         accountType: 'debit',
         balance: 500,
         email: 'john@example.com',
-        accountCurrency: 'USD', // Supported for Currency Consistency check
+        accountCurrency: 'USD', // Essential for Currency Consistency check
+        homeCountry: 'USA', // Essential for Geo-Consistency check
         preferences: { emailNotifications: true },
         deviceTokens: ['token1'],
         transactionHistory: [{ amount: 100 }, { amount: 50 }],
@@ -31,6 +32,7 @@ class DBClient {
         balance: 0,
         email: 'jane@example.com',
         accountCurrency: 'USD',
+        homeCountry: 'USA',
         preferences: { emailNotifications: false },
         deviceTokens: [],
         transactionHistory: [],
@@ -56,6 +58,17 @@ class DBClient {
       throw new Error('User not found');
     }
     return user;
+  }
+
+  /**
+   * Mock trusted IPs for the specific user validation.
+   */
+  async getUserTrustedIPs(userId) {
+    // Return a list of trusted IPs to support the IP Whitelist Validation
+    return [
+      { address: '192.168.1.1', isActive: true },
+      { address: '200.45.123.10', isActive: true }
+    ];
   }
 
   async getProductStock(productId) {
@@ -144,7 +157,16 @@ class DBClient {
   }
 }
 
-// Exporting a singleton instance to maintain state across tests
-// At the very end of dbClient.js
+// Singleton Instance to maintain state across tests
 const dbClientInstance = new DBClient();
+
+/**
+ * DOUBLE-EXPORT STRATEGY: 
+ * We export the instance as the default, but also export 
+ * critical methods individually to satisfy the agent's 
+ * generated test scope and prevent ReferenceErrors.
+ */
 module.exports = dbClientInstance;
+module.exports.getUser = dbClientInstance.getUser.bind(dbClientInstance);
+module.exports.getUserTrustedIPs = dbClientInstance.getUserTrustedIPs.bind(dbClientInstance);
+module.exports.getUserTransactionsToday = dbClientInstance.getUserTransactionsToday.bind(dbClientInstance);

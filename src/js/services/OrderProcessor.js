@@ -62,7 +62,7 @@ class OrderProcessor {
       throw new Error(`ACCOUNT_INACTIVE: Transaction rejected. Current status: ${user.status || 'unknown'}`);
     }
 
-    // NEW VALIDATION: User Risk Tier Enforcement
+    // User Risk Tier Enforcement
     // Restricts high-value transactions for non-VIP or unverified risk profiles
     const RISK_THRESHOLD = 5000;
     const restrictedTiers = ['guest', 'regular', 'unverified'];
@@ -82,6 +82,19 @@ class OrderProcessor {
       if (timeElapsed > sessionTimeout) {
         logger.error(`Security Alert: Session expired for user ${user.id}. Request was ${timeElapsed}ms old.`);
         throw new Error('SESSION_EXPIRED: The transaction request has timed out. Please try again.');
+      }
+    }
+
+    // 10. IP Address Whitelist Validation (Security)
+    // Ensures transaction is from a known or trusted IP address
+    const userIps = await dbClient.getUserTrustedIPs(user.id);
+    const transactionIp = paymentData.metadata?.ipAddress;
+    
+    if (transactionIp && userIps.length > 0) {
+      const isIpTrusted = userIps.some(ip => ip.address === transactionIp && ip.isActive);
+      if (!isIpTrusted) {
+        logger.warn(`Security Alert: Transaction from untrusted IP ${transactionIp} for user ${user.id}`);
+        throw new Error('UNTRUSTED_IP: Transaction blocked. Please verify from your registered IP.');
       }
     }
 
