@@ -45,6 +45,15 @@ class PaymentProcessor {
        throw new Error('UNSAFE_TRANSACTION: Missing required integrity keys');
     }
 
+    // NUEVA VALIDACIÓN: Control de Frecuencia (Velocity Check)
+    const recentTransactions = await dbClient.getUserTransactionsToday(user.id);
+    const MAX_DAILY_TRANSACTIONS = 10;
+    
+    if (recentTransactions.length >= MAX_DAILY_TRANSACTIONS) {
+       logger.error(`Fraud Prevention: User ${user.id} exceeded daily transaction frequency`);
+       throw new Error('RATE_LIMIT_EXCEEDED: Too many transactions in a short period. Please try again tomorrow.');
+    }
+
     //Ventana de mantenimiento (3 AM a 4 AM)
     const currentHour = new Date().getHours();
     if (currentHour === 3) {
@@ -57,7 +66,7 @@ class PaymentProcessor {
        throw new Error(`INVALID_METHOD: ${paymentData.paymentMethod} is not a valid payment method`);
     }
 
-    // NUEVA VALIDACIÓN: Países con restricciones (Compliance)
+    //Países con restricciones (Compliance)
     const blockedCountries = ['IRN', 'PRK', 'SYR']; // ISO Codes
     if (blockedCountries.includes(paymentData.metadata?.countryCode)) {
        logger.warn(`Compliance Alert: Transaction blocked for country ${paymentData.metadata.countryCode}`);
