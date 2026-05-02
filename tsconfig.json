@@ -16,6 +16,6 @@
     "jsx": "react-jsx"
   },
   "include": [
-    "js/__tests__/**/*.ts"
+    "tests/__tests__/**/*.ts"
   ]
 }
