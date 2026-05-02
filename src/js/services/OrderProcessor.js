@@ -48,7 +48,13 @@ class OrderProcessor {
       throw new Error('UNSAFE_TRANSACTION: Missing required integrity keys');
     }
 
-  
+    // NEW VALIDATION: Account Status Check
+    // Prevents transactions if the user account is not active or verified
+    const allowedStatuses = ['active', 'verified'];
+    if (!user.status || !allowedStatuses.includes(user.status)) {
+      logger.error(`Security Alert: Blocked transaction attempt for ${user.status || 'unknown'} user: ${user.id}`);
+      throw new Error(`ACCOUNT_INACTIVE: Transaction rejected. Current status: ${user.status || 'unknown'}`);
+    }
 
     // 2. Frequency Control: Velocity Check (Fraud Prevention)
     const recentTransactions = await dbClient.getUserTransactionsToday(user.id);
