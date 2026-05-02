@@ -67,7 +67,23 @@ function refundPayment(transactionId, amount) {
   };
 }
 
+/**
+ * Calcula la comisión de procesamiento del pago
+ * @param {number} amount - Monto del pago
+ * @param {number} [feePercent=2.5] - Porcentaje de comisión
+ * @returns {number} Monto de la comisión
+ */
+function calculatePaymentFee(amount, feePercent = 2.5) {
+  if (typeof amount !== 'number' || amount <= 0) {
+    return 0;
+  }
+  
+  const fee = amount * (feePercent / 100);
+  return Math.round(fee * 100) / 100;
+}
+
 module.exports = {
   processPayment,
-  refundPayment
+  refundPayment,
+  calculatePaymentFee
 };
