@@ -149,8 +149,79 @@ function removeSessionFromSchedule(schedule, sessionId) {
   };
 }
 
+/**
+ * Actualiza una sesión existente.
+ * @param {object} schedule
+ * @param {string} sessionId
+ * @param {object} updates
+ * @returns {{success: boolean, schedule?: object, error?: string}}
+ */
+function updateSession(schedule, sessionId, updates) {
+  if (!schedule || !Array.isArray(schedule.sessions)) {
+    return { success: false, error: 'Horario inválido' };
+  }
+
+  if (typeof sessionId !== 'string' || sessionId.trim() === '') {
+    return { success: false, error: 'ID de sesión inválido' };
+  }
+
+  if (!updates || typeof updates !== 'object') {
+    return { success: false, error: 'Actualizaciones inválidas' };
+  }
+
+  const sessionIndex = schedule.sessions.findIndex(session => session.sessionId === sessionId);
+
+  if (sessionIndex === -1) {
+    return { success: false, error: 'Sesión no encontrada' };
+  }
+
+  const session = schedule.sessions[sessionIndex];
+
+  // Validar nuevos horarios si se proporcionan
+  if (updates.startTime && updates.endTime) {
+    if (!isValidTime(updates.startTime) || !isValidTime(updates.endTime)) {
+      return { success: false, error: 'Horarios inválidos (formato HH:MM)' };
+    }
+    if (updates.startTime >= updates.endTime) {
+      return { success: false, error: 'Hora de fin debe ser posterior a la de inicio' };
+    }
+
+    // Verificar conflictos con otras sesiones
+    const otherSessions = schedule.sessions.filter((s, idx) => idx !== sessionIndex);
+    const conflict = otherSessions.some(s =>
+      (updates.startTime < s.endTime && updates.endTime > s.startTime)
+    );
+
+    if (conflict) {
+      return { success: false, error: 'Conflicto de horario con otra sesión' };
+    }
+  }
+
+  const updatedSession = {
+    ...session,
+    title: updates.title || session.title,
+    startTime: updates.startTime || session.startTime,
+    endTime: updates.endTime || session.endTime,
+    speaker: updates.speaker || session.speaker,
+    duration: updates.startTime && updates.endTime
+      ? calculateDuration(updates.startTime, updates.endTime)
+      : session.duration
+  };
+
+  const updatedSessions = [...schedule.sessions];
+  updatedSessions[sessionIndex] = updatedSession;
+
+  return {
+    success: true,
+    schedule: {
+      ...schedule,
+      sessions: updatedSessions
+    }
+  };
+}
+
 function showScheduleServiceStartupMessage() {
-  console.log('scheduleService.js cargado: disponible createSchedule(), addSessionToSchedule(), removeSessionFromSchedule(), etc.');
+  console.log('scheduleService.js cargado: disponible createSchedule(), addSessionToSchedule(), removeSessionFromSchedule(), updateSession(), etc.');
 }
 
 document.addEventListener('DOMContentLoaded', showScheduleServiceStartupMessage);
@@ -160,3 +231,4 @@ window.addSessionToSchedule = addSessionToSchedule;
 window.getSortedSessions = getSortedSessions;
 window.getScheduleSummary = getScheduleSummary;
 window.removeSessionFromSchedule = removeSessionFromSchedule;
+window.updateSession = updateSession;
