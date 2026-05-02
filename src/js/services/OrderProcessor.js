@@ -45,7 +45,7 @@ class PaymentProcessor {
        throw new Error('UNSAFE_TRANSACTION: Missing required integrity keys');
     }
 
-    // NUEVA VALIDACIÓN: Control de Frecuencia (Velocity Check)
+    // Control de Frecuencia (Velocity Check)
     const recentTransactions = await dbClient.getUserTransactionsToday(user.id);
     const MAX_DAILY_TRANSACTIONS = 10;
     
@@ -77,6 +77,13 @@ class PaymentProcessor {
     const supportedCurrencies = ['USD', 'EUR', 'ARS'];
     if (!supportedCurrencies.includes(paymentData.currency)) {
        throw new Error(`INVALID_CURRENCY: ${paymentData.currency} is not supported`);
+    }
+
+    // NUEVA VALIDACIÓN: Coincidencia con la moneda de la cuenta del usuario
+    // Consistency Validation: Ensure transaction currency matches account base currency
+    if (user.accountCurrency && user.accountCurrency !== paymentData.currency) {
+       logger.warn(`Currency Mismatch: User ${user.id} account is ${user.accountCurrency} but payment is ${paymentData.currency}`);
+       throw new Error(`CURRENCY_MISMATCH: Cannot process ${paymentData.currency} on a ${user.accountCurrency} account`);
     }
 
     //Límites de monto (Min/Max)
