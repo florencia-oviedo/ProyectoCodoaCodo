@@ -77,9 +77,9 @@ function log(level, message, data) {
   // También loggea en consola
   const consoleMethod = level.toLowerCase();
   if (console[consoleMethod]) {
-    console[consoleMethod](`[${level}] ${message}`, data || '');
+    console[consoleMethod](`[${level}] ${message}`, data);
   } else {
-    console.log(`[${level}] ${message}`, data || '');
+    console.log(`[${level}] ${message}`, data);
   }
 }
 
@@ -121,3 +121,19 @@ window.error = error;
 window.getLogs = getLogs;
 window.clearLogs = clearLogs;
 window.getLogsByLevel = getLogsByLevel;
+
+// Exportar para tests
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    setLogLevel,
+    debug,
+    info,
+    warn,
+    error,
+    getLogs,
+    clearLogs,
+    getLogsByLevel,
+    LOG_LEVELS,
+    currentLogLevel
+  };
+}

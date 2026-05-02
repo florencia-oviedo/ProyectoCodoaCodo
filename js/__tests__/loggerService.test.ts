@@ -1,4 +1,4 @@
-import { setLogLevel, debug, info, warn, error, getLogs, clearLogs, getLogsByLevel } from './loggerService';
+import { setLogLevel, debug, info, warn, error, getLogs, clearLogs, getLogsByLevel, LOG_LEVELS } from '../loggerService';
 
 describe('loggerService', () => {
   beforeEach(() => {
@@ -11,16 +11,19 @@ describe('loggerService', () => {
     expect(getLogs()).toHaveLength(1);
 
     setLogLevel('INFO');
+    clearLogs();
     debug('Debug message');
-    expect(getLogs()).toHaveLength(1);
+    expect(getLogs()).toHaveLength(0);
 
     setLogLevel('WARN');
+    clearLogs();
     debug('Debug message');
-    expect(getLogs()).toHaveLength(1);
+    expect(getLogs()).toHaveLength(0);
 
     setLogLevel('ERROR');
+    clearLogs();
     debug('Debug message');
-    expect(getLogs()).toHaveLength(1);
+    expect(getLogs()).toHaveLength(0);
   });
 
   it('should log messages with correct level and data', () => {
@@ -37,10 +40,6 @@ describe('loggerService', () => {
   });
 
   it('should not log messages below the set log level', () => {
-    setLogLevel('INFO');
-    info('Info message');
-    expect(getLogs()).toHaveLength(0);
-
     setLogLevel('WARN');
     info('Info message');
     expect(getLogs()).toHaveLength(0);
@@ -71,14 +70,24 @@ describe('loggerService', () => {
   });
 
   it('should log messages to the console', () => {
+    const consoleSpy = jest.spyOn(console, 'debug').mockImplementation(() => {});
     setLogLevel('DEBUG');
     debug('Debug message');
-    expect(console.debug).toHaveBeenCalledWith('[DEBUG] Debug message', null);
+    expect(consoleSpy).toHaveBeenCalledWith('[DEBUG] Debug message', null);
+    consoleSpy.mockRestore();
   });
 
   it('should handle invalid log levels', () => {
-    setLogLevel('FOO');
-    expect(currentLogLevel).toBe(LOG_LEVELS.INFO);
+    // Since currentLogLevel is not exported, we can't test it directly
+    // Instead, test that invalid level doesn't change behavior
+    setLogLevel('DEBUG');
+    debug('Debug message');
+    expect(getLogs()).toHaveLength(1);
+
+    setLogLevel('INVALID');
+    clearLogs();
+    debug('Debug message');
+    expect(getLogs()).toHaveLength(1); // Should still log since level didn't change
   });
 
   it('should clear all logs', () => {

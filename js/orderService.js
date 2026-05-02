@@ -1,91 +1,86 @@
-// js/orderService.js - Módulo simple de pedidos y estados
+// js/orderService.js - Módulo de gestión de usuarios para eventos
 
-const ORDER_STATUSES = ['pending', 'paid', 'shipped', 'delivered', 'cancelled'];
+const USER_ROLES = ['attendee', 'speaker', 'organizer', 'admin'];
 
 /**
- * Crea un pedido simple con items y estado inicial.
- * @param {string} customerName
- * @param {Array<{productId: string, quantity: number}>} items
- * @returns {{success: boolean, orderId?: string, error?: string, order?: object}}
+ * Registra un nuevo usuario para el evento.
+ * @param {string} name
+ * @param {string} email
+ * @param {string} [role='attendee']
+ * @returns {{success: boolean, user?: object, error?: string}}
  */
-function createOrder(customerName, items) {
-  if (typeof customerName !== 'string' || customerName.trim() === '') {
-    return { success: false, error: 'Nombre de cliente inválido' };
+function registerUser(name, email, role = 'attendee') {
+  if (typeof name !== 'string' || name.trim() === '') {
+    return { success: false, error: 'Nombre inválido' };
   }
 
-  if (!Array.isArray(items) || items.length === 0) {
-    return { success: false, error: 'El pedido debe contener al menos un item' };
+  if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { success: false, error: 'Email inválido' };
   }
 
-  const validItems = items.every(item =>
-    item && typeof item.productId === 'string' && item.productId.trim() !== '' &&
-    typeof item.quantity === 'number' && item.quantity > 0
-  );
-
-  if (!validItems) {
-    return { success: false, error: 'Items inválidos: cada item requiere productId y quantity mayor que 0' };
+  if (!USER_ROLES.includes(role)) {
+    return { success: false, error: `Rol inválido: debe ser uno de ${USER_ROLES.join(', ')}` };
   }
 
-  const orderId = 'ORD-' + Date.now().toString(36).toUpperCase();
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  const userId = 'USER-' + Date.now().toString(36).toUpperCase();
 
   return {
     success: true,
-    order: {
-      orderId,
-      customerName: customerName.trim(),
-      items: items.map(item => ({ productId: item.productId.trim(), quantity: item.quantity })),
-      totalItems,
-      status: 'pending',
-      createdAt: new Date().toISOString()
+    user: {
+      userId,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      role,
+      registeredAt: new Date().toISOString(),
+      active: true
     }
   };
 }
 
 /**
- * Actualiza el estado de un pedido.
- * @param {object} order
- * @param {string} newStatus
- * @returns {{success: boolean, order?: object, error?: string}}
+ * Actualiza el rol de un usuario.
+ * @param {object} user
+ * @param {string} newRole
+ * @returns {{success: boolean, user?: object, error?: string}}
  */
-function updateOrderStatus(order, newStatus) {
-  if (!order || typeof order !== 'object') {
-    return { success: false, error: 'Pedido inválido' };
+function updateUserRole(user, newRole) {
+  if (!user || typeof user !== 'object') {
+    return { success: false, error: 'Usuario inválido' };
   }
 
-  if (!ORDER_STATUSES.includes(newStatus)) {
-    return { success: false, error: `Estado inválido: debe ser uno de ${ORDER_STATUSES.join(', ')}` };
+  if (!USER_ROLES.includes(newRole)) {
+    return { success: false, error: `Rol inválido: debe ser uno de ${USER_ROLES.join(', ')}` };
   }
 
   return {
     success: true,
-    order: {
-      ...order,
-      status: newStatus,
+    user: {
+      ...user,
+      role: newRole,
       updatedAt: new Date().toISOString()
     }
   };
 }
 
 /**
- * Genera un resumen legible del pedido.
- * @param {object} order
+ * Obtiene un resumen del usuario.
+ * @param {object} user
  * @returns {string}
  */
-function getOrderSummary(order) {
-  if (!order || typeof order !== 'object') {
-    return 'Pedido inválido';
+function getUserSummary(user) {
+  if (!user || typeof user !== 'object') {
+    return 'Usuario inválido';
   }
 
-  return `Pedido ${order.orderId} para ${order.customerName}: ${order.totalItems} item(s), estado ${order.status}.`;
+  return `Usuario ${user.userId}: ${user.name} (${user.email}), rol ${user.role}, ${user.active ? 'activo' : 'inactivo'}.`;
 }
 
-function showOrderServiceStartupMessage() {
-  console.log('orderService.js cargado: disponible createOrder(), updateOrderStatus() y getOrderSummary()');
+function showUserServiceStartupMessage() {
+  console.log('orderService.js (ahora userService) cargado: disponible registerUser(), updateUserRole() y getUserSummary()');
 }
 
-document.addEventListener('DOMContentLoaded', showOrderServiceStartupMessage);
+document.addEventListener('DOMContentLoaded', showUserServiceStartupMessage);
 
-window.createOrder = createOrder;
-window.updateOrderStatus = updateOrderStatus;
-window.getOrderSummary = getOrderSummary;
+window.registerUser = registerUser;
+window.updateUserRole = updateUserRole;
+window.getUserSummary = getUserSummary;
