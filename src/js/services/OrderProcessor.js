@@ -2,6 +2,7 @@ const dbClient = require('./dbClient');
 const paymentGateway = require('./paymentGateway');
 const notificationService = require('./notificationService');
 const logger = require('./logger');
+const FraudDetector = require('./fraudDetector');
 
 class PaymentProcessor {
   constructor() {
@@ -45,13 +46,55 @@ class PaymentProcessor {
        throw new Error('UNSAFE_TRANSACTION: Missing required integrity keys');
     }
 
+    // Control de Frecuencia (Velocity Check)
+    const recentTransactions = await dbClient.getUserTransactionsToday(user.id);
+    const MAX_DAILY_TRANSACTIONS = 10;
+    
+    if (recentTransactions.length >= MAX_DAILY_TRANSACTIONS) {
+       logger.error(`Fraud Prevention: User ${user.id} exceeded daily transaction frequency`);
+       throw new Error('RATE_LIMIT_EXCEEDED: Too many transactions in a short period. Please try again tomorrow.');
+    }
+
+    // NEW VALIDATION: Advanced Fraud Detection via FraudDetector class[cite: 1]
+    const fraudScore = await this.fraudDetector.analyzeTransaction(user, paymentData);
+    if (fraudScore > 0.8) {
+      await this.handleFraudulentTransaction(user, paymentData, fraudScore);
+      throw new Error('FRAUD_DETECTION_ALARM: Transaction rejected by security protocols');
+    }
+
+    //Ventana de mantenimiento (3 AM a 4 AM)
+    const currentHour = new Date().getHours();
+    if (currentHour === 3) {
+       throw new Error('SERVICE_UNAVAILABLE: System is under scheduled maintenance between 03:00 and 04:00');
+    }
+
+    //Métodos de pago permitidos
+    const allowedMethods = ['credit_card', 'debit_card', 'bank_transfer', 'crypto'];
+    if (!allowedMethods.includes(paymentData.paymentMethod)) {
+       throw new Error(`INVALID_METHOD: ${paymentData.paymentMethod} is not a valid payment method`);
+    }
+
+    //Países con restricciones (Compliance)
+    const blockedCountries = ['IRN', 'PRK', 'SYR']; // ISO Codes
+    if (blockedCountries.includes(paymentData.metadata?.countryCode)) {
+       logger.warn(`Compliance Alert: Transaction blocked for country ${paymentData.metadata.countryCode}`);
+       throw new Error('COMPLIANCE_ERROR: Transaction cannot be processed from this region');
+    }
+
     // Monedas soportadas
     const supportedCurrencies = ['USD', 'EUR', 'ARS'];
     if (!supportedCurrencies.includes(paymentData.currency)) {
        throw new Error(`INVALID_CURRENCY: ${paymentData.currency} is not supported`);
     }
 
-    // NUEVA VALIDACIÓN: Límites de monto (Min/Max)
+    // NUEVA VALIDACIÓN: Coincidencia con la moneda de la cuenta del usuario
+    // Consistency Validation: Ensure transaction currency matches account base currency
+    if (user.accountCurrency && user.accountCurrency !== paymentData.currency) {
+       logger.warn(`Currency Mismatch: User ${user.id} account is ${user.accountCurrency} but payment is ${paymentData.currency}`);
+       throw new Error(`CURRENCY_MISMATCH: Cannot process ${paymentData.currency} on a ${user.accountCurrency} account`);
+    }
+
+    //Límites de monto (Min/Max)
     const MIN_AMOUNT = 0.50;
     const MAX_AMOUNT = 50000;
     if (paymentData.amount < MIN_AMOUNT || paymentData.amount > MAX_AMOUNT) {
