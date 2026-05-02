@@ -70,6 +70,14 @@ class OrderProcessor {
       logger.warn(`Business Rule: Transaction of ${paymentData.amount} rejected for being below the minimum threshold.`);
       throw new Error(`TRANSACTION_TOO_SMALL: The minimum amount allowed is ${ABSOLUTE_MIN_AMOUNT} ${paymentData.currency}.`);
     }
+
+    // 14. Allowed Currencies Check
+    // Ensures the transaction uses a currency supported by our regional clearing house
+    const clearingSupported = ['USD', 'EUR', 'ARS', 'BRL'];
+    if (!clearingSupported.includes(paymentData.currency)) {
+      logger.error(`Compliance Error: Unsupported currency ${paymentData.currency} for user ${user.id}`);
+      throw new Error(`UNSUPPORTED_CURRENCY: ${paymentData.currency} is not allowed for this region.`);
+    }
     
     // 1. Integrity Validation: Ensure idempotency and required data
     if (!paymentData.idempotencyKey || !paymentData.amount) {
