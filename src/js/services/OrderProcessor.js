@@ -15,21 +15,19 @@ class OrderProcessor {
    * Validación de límites de usuario (Estática para compatibilidad con tests)
    */
   static async checkUserLimits(user, amount) {
-    // 19. Transaction Category Validation (NUEVA)
-    // Clasifica la operación para aplicar reglas de negocio específicas
     const isLargeTransaction = amount > 1000;
     
-    const todayTransactions = await dbClient.getUserTransactionsToday(user.id);
-    const todayTotal = todayTransactions.reduce((sum, t) => sum + t.amount, 0);
+    // Agregamos "|| []" para asegurar que siempre haya un array para reducir
+    const todayTransactions = (await dbClient.getUserTransactionsToday(user.id)) || []; 
+    const todayTotal = todayTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
 
-    // Solo validamos el límite diario si no es una "Large Transaction" 
-    // Esto permite que los tests mensuales lleguen a su validación correspondiente
     if (!isLargeTransaction && (todayTotal + amount > user.dailyLimit)) {
       throw new Error('Daily transaction limit exceeded');
     }
 
-    const monthTransactions = await dbClient.getUserTransactionsThisMonth(user.id);
-    const monthTotal = monthTransactions.reduce((sum, t) => sum + t.amount, 0);
+    // Repetimos la misma lógica defensiva para el mes
+    const monthTransactions = (await dbClient.getUserTransactionsThisMonth(user.id)) || [];
+    const monthTotal = monthTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
 
     if (monthTotal + amount > user.monthlyLimit) {
       throw new Error('Monthly transaction limit exceeded');
@@ -39,7 +37,6 @@ class OrderProcessor {
       throw new Error('Insufficient funds');
     }
   }
-
   /**
    * Ejecución de pago con pipeline de 15 validaciones
    * Se define como estático para asegurar compatibilidad con el agente de pruebas
@@ -169,6 +166,14 @@ class OrderProcessor {
         logger.warn(`Transaction rejected: Card expired for user ${user.id}`);
         throw new Error('CARD_EXPIRED: The payment method has reached its expiration date.');
       }
+    }
+
+    // 22. Global Daily Cap Validation (Bank-level Hard Limit)
+    // Absolute daily ceiling to prevent massive capital flight or systemic errors
+    const BANK_DAILY_CAP = 100000;
+    if (todayTotal + amount > BANK_DAILY_CAP) {
+      logger.error(`Systemic Risk: User ${user.id} hit the global bank daily cap of ${BANK_DAILY_CAP}`);
+      throw new Error('BANK_LIMIT_EXCEEDED: This transaction exceeds the global daily safety ceiling.');
     }
 
     // 8. Currency Consistency
