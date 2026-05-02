@@ -35,7 +35,7 @@ class OrderProcessor {
 
       // Calcular total con descuentos complejos
       const subtotal = this.calculateSubtotal(items);
-      const discounts = this.calculateDiscounts(subtotal, user, new Date());
+      const discounts = this.calculateDiscounts(subtotal, user, new Date(), orderData.coupon);
       const total = this.applyDiscounts(subtotal, discounts);
 
       // Procesar pago
@@ -99,6 +99,27 @@ class OrderProcessor {
         throw new Error(`Item ${index} inválido: requiere productId y quantity > 0`);
       }
     });
+
+    // Validar cupón si está presente
+    if (orderData.coupon) {
+      this.validateCoupon(orderData.coupon);
+    }
+  }
+
+  /**
+   * Valida un cupón de descuento
+   * @param {string} coupon
+   */
+  validateCoupon(coupon) {
+    if (typeof coupon !== 'string' || coupon.length === 0) {
+      throw new Error('Cupón inválido: debe ser una cadena no vacía');
+    }
+
+    // Simular cupones válidos (en producción, esto vendría de DB)
+    const validCoupons = ['WELCOME10', 'SUMMER20', 'VIP30'];
+    if (!validCoupons.includes(coupon.toUpperCase())) {
+      throw new Error(`Cupón inválido: ${coupon}`);
+    }
   }
 
   /**
@@ -151,10 +172,11 @@ class OrderProcessor {
    * @param {number} subtotal
    * @param {object} user
    * @param {Date} currentDate
+   * @param {string} coupon
    * @returns {object}
    */
-  calculateDiscounts(subtotal, user, currentDate) {
-    const discounts = { vip: 0, day: 0, total: 0 };
+  calculateDiscounts(subtotal, user, currentDate, coupon) {
+    const discounts = { vip: 0, day: 0, coupon: 0, total: 0 };
 
     // Descuento VIP: 15% si es VIP y subtotal > 100
     if (user.tier === 'VIP' && subtotal > 100) {
@@ -166,8 +188,21 @@ class OrderProcessor {
       discounts.day = subtotal * 0.05;
     }
 
+    // Descuento por cupón
+    if (coupon) {
+      const couponDiscounts = {
+        'WELCOME10': 0.10,
+        'SUMMER20': 0.20,
+        'VIP30': 0.30
+      };
+      const discountRate = couponDiscounts[coupon.toUpperCase()];
+      if (discountRate) {
+        discounts.coupon = subtotal * discountRate;
+      }
+    }
+
     // Total con precisión decimal
-    discounts.total = Math.round((discounts.vip + discounts.day) * 100) / 100;
+    discounts.total = Math.round((discounts.vip + discounts.day + discounts.coupon) * 100) / 100;
 
     return discounts;
   }
