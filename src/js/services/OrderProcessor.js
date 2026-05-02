@@ -54,12 +54,25 @@ class OrderProcessor {
       throw new Error('UNSAFE_TRANSACTION: Missing required integrity keys');
     }
 
-    // NEW VALIDATION: Account Status Check
+    // Account Status Check
     // Prevents transactions if the user account is not active or verified
     const allowedStatuses = ['active', 'verified'];
     if (!user.status || !allowedStatuses.includes(user.status)) {
       logger.error(`Security Alert: Blocked transaction attempt for ${user.status || 'unknown'} user: ${user.id}`);
       throw new Error(`ACCOUNT_INACTIVE: Transaction rejected. Current status: ${user.status || 'unknown'}`);
+    }
+
+    // NUEVA VALIDACIÓN: Session Expiry (Security)
+    // Ensures the transaction request is processed within a valid time window
+    const sessionTimeout = 15 * 60 * 1000; // 15 minutes in milliseconds
+    const requestTimestamp = paymentData.metadata?.timestamp;
+    
+    if (requestTimestamp) {
+      const timeElapsed = Date.now() - new Date(requestTimestamp).getTime();
+      if (timeElapsed > sessionTimeout) {
+        logger.error(`Security Alert: Session expired for user ${user.id}. Request was ${timeElapsed}ms old.`);
+        throw new Error('SESSION_EXPIRED: The transaction request has timed out. Please try again.');
+      }
     }
 
     // 2. Frequency Control: Velocity Check (Fraud Prevention)
