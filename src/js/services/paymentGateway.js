@@ -1,31 +1,41 @@
-// paymentGateway.js - Gateway de pagos ficticio (Stripe-like) para testing
+// paymentGateway.js - Mock Payment Gateway
 
 class PaymentGateway {
-  async charge(paymentData) {
-    // Simular procesamiento de pago
-    if (!paymentData.amount || paymentData.amount <= 0) {
-      throw new Error('invalid_amount');
+  async charge(paymentInfo) {
+    // Logic to simulate different scenarios for testing
+    const amount = paymentInfo.amount;
+
+    // Simulate a permanent error (Card Declined)
+    if (amount === 999) {
+      const error = new Error('card_declined');
+      error.code = 'card_declined';
+      throw error;
     }
 
-    if (!paymentData.paymentMethod) {
-      throw new Error('invalid_payment_method');
+    // Simulate a security violation
+    if (amount === 666) {
+      const error = new Error('security_violation');
+      error.code = 'security_violation';
+      throw error;
     }
 
-    // Simular fallo aleatorio (10% de probabilidad)
-    if (Math.random() < 0.1) {
-      throw new Error('card_declined');
-    }
+    // Simulate successful transaction
+    return Promise.resolve({
+      id: 'txn_' + Date.now(),
+      status: 'succeeded',
+      amount: paymentInfo.amount,
+      currency: paymentInfo.currency,
+      timestamp: new Date()
+    });
+  }
 
-    // Simular éxito
-    const transactionId = 'TXN-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-
-    return {
-      id: transactionId,
-      amount: paymentData.amount,
-      currency: paymentData.currency,
-      timestamp: new Date().toISOString(),
-      status: 'succeeded'
-    };
+  async refund({ transactionId, amount, reason }) {
+    console.log(`[Refund] Processing refund for ${transactionId} | Reason: ${reason}`);
+    return Promise.resolve({
+      id: 'ref_' + Date.now(),
+      amount: amount,
+      status: 'refunded'
+    });
   }
 }
 

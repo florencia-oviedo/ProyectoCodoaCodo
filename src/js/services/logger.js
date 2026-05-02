@@ -1,17 +1,9 @@
-// logger.js - Logger ficticio para testing
+// logger.js - Simple Mock Logger
 
-class Logger {
-  info(message) {
-    console.log(`[INFO] ${new Date().toISOString()}: ${message}`);
-  }
+const logger = {
+  info: (msg) => console.log(`[INFO] ${msg}`),
+  warn: (msg) => console.warn(`[WARN] ${msg}`),
+  error: (msg) => console.error(`[ERROR] ${msg}`)
+};
 
-  warn(message) {
-    console.warn(`[WARN] ${new Date().toISOString()}: ${message}`);
-  }
-
-  error(message) {
-    console.error(`[ERROR] ${new Date().toISOString()}: ${message}`);
-  }
-}
-
-module.exports = new Logger();
+module.exports = logger;
