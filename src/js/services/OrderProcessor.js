@@ -139,6 +139,13 @@ class OrderProcessor {
       paymentData.riskFactor = (paymentData.riskFactor || 0) + 0.5;
     }
 
+    // 18. Session ID Integrity Check
+    // Verifies that the request is bound to a valid session identifier
+    if (!paymentData.metadata?.sessionId) {
+      logger.error(`Security Alert: Transaction attempt without Session ID for user ${user.id}`);
+      throw new Error('MISSING_SESSION_ID: Security context is incomplete.');
+    }
+
     // 8. Currency Consistency
     if (user.accountCurrency && user.accountCurrency !== paymentData.currency) {
       throw new Error('CURRENCY_MISMATCH: Payment must match account currency.');
