@@ -37,7 +37,8 @@ class OrderProcessor {
       const subtotal = this.calculateSubtotal(items);
       const discounts = this.calculateDiscounts(subtotal, user, new Date(), orderData.coupon);
       const taxes = this.calculateTaxes(orderData.location, subtotal - discounts.total);
-      const total = this.applyDiscounts(subtotal, discounts) + taxes;
+      const shipping = this.calculateShipping(items, orderData.location);
+      const total = this.applyDiscounts(subtotal, discounts) + taxes + shipping;
 
       // Procesar pago
       const paymentResult = await this.processPayment(total, paymentMethod);
@@ -56,6 +57,7 @@ class OrderProcessor {
         subtotal,
         discounts,
         taxes,
+        shipping,
         total,
         paymentId: paymentResult.transactionId
       });
@@ -68,6 +70,7 @@ class OrderProcessor {
         subtotal,
         discounts,
         taxes,
+        shipping,
         total
       };
 
@@ -113,6 +116,13 @@ class OrderProcessor {
     if (orderData.location) {
       if (typeof orderData.location !== 'string' || orderData.location.length === 0) {
         throw new Error('Ubicación inválida: debe ser una cadena no vacía');
+      }
+    }
+
+    // Validar dirección de envío si está presente (para costos de envío)
+    if (orderData.shippingAddress) {
+      if (typeof orderData.shippingAddress !== 'string' || orderData.shippingAddress.length === 0) {
+        throw new Error('Dirección de envío inválida: debe ser una cadena no vacía');
       }
     }
   }
@@ -237,6 +247,32 @@ class OrderProcessor {
 
     const rate = taxRates[location.toUpperCase()] || taxRates.default;
     return Math.round(subtotal * rate * 100) / 100;
+  }
+
+  /**
+   * Calcula costos de envío basados en items y ubicación
+   * @param {Array} items
+   * @param {string} location
+   * @returns {number}
+   */
+  calculateShipping(items, location) {
+    if (!location) return 0;
+
+    // Calcular peso total (simulado: 1kg por item)
+    const totalWeight = items.reduce((weight, item) => weight + item.quantity, 0);
+
+    // Tarifas de envío por ubicación (simuladas)
+    const shippingRates = {
+      'US': { base: 5, perKg: 2 },
+      'EU': { base: 10, perKg: 3 },
+      'AR': { base: 8, perKg: 2.5 },
+      'default': { base: 7, perKg: 2 }
+    };
+
+    const rate = shippingRates[location.toUpperCase()] || shippingRates.default;
+    const shippingCost = rate.base + (totalWeight * rate.perKg);
+
+    return Math.round(shippingCost * 100) / 100;
   }
 
   /**
