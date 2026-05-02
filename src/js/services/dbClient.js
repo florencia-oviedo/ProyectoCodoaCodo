@@ -145,4 +145,6 @@ class DBClient {
 }
 
 // Exporting a singleton instance to maintain state across tests
-module.exports = new DBClient();
+// At the very end of dbClient.js
+const dbClientInstance = new DBClient();
+module.exports = dbClientInstance;
