@@ -1,3 +1,104 @@
+/**
+ * PaymentProcessor - Complex business logic module for QABOB demo
+ * This module demonstrates:
+ * - Complex business logic with multiple validations
+ * - External dependencies (database, payment gateway, notification service)
+ * - Edge cases (fraud detection, retry logic, error handling)
+ * - Async operations with proper error handling
+ */
+
+const dbClient = require('./dbClient');
+const paymentGateway = require('./paymentGateway');
+const notificationService = require('./notificationService');
+const fraudDetector = require('./fraudDetector');
+const logger = require('./logger');
+
+class PaymentProcessor {
+  constructor(config = {}) {
+    this.maxRetries = config.maxRetries || 3;
+    this.retryDelay = config.retryDelay || 1000;
+    this.fraudThreshold = config.fraudThreshold || 0.8;
+    this.minAmount = config.minAmount || 0.01;
+    this.maxAmount = config.maxAmount || 100000;
+  }
+
+  /**
+   * Process a payment with full validation, fraud detection, and retry logic
+   */
+  async processPayment(paymentData) {
+    try {
+      this.validatePaymentData(paymentData);
+
+      const user = await dbClient.getUser(paymentData.userId);
+      if (!user || user.status === 'suspended') {
+        throw new Error('User not found or suspended');
+      }
+
+      await this.checkUserLimits(user, paymentData.amount);
+
+      const fraudScore = await fraudDetector.analyzeTransaction({
+        userId: user.id,
+        amount: paymentData.amount,
+        currency: paymentData.currency,
+        ipAddress: paymentData.metadata?.ipAddress,
+        deviceId: paymentData.metadata?.deviceId,
+        userHistory: user.transactionHistory
+      });
+
+      if (fraudScore > this.fraudThreshold) {
+        logger.warn(`High fraud score: ${fraudScore} for user ${user.id}`);
+        await this.handleFraudulentTransaction(user, paymentData, fraudScore);
+        throw new Error('Transaction flagged as potentially fraudulent');
+      }
+
+      const transaction = await this.executePaymentWithRetry(user, paymentData);
+
+      await this.updateUserAccount(user, transaction);
+      await this.sendNotifications(user, transaction);
+
+      logger.info(`Payment processed: ${transaction.id}`);
+
+      return {
+        success: true,
+        transactionId: transaction.id,
+        amount: transaction.amount,
+        currency: transaction.currency,
+        timestamp: transaction.timestamp,
+        status: 'completed'
+      };
+
+    } catch (error) {
+      logger.error(`Payment failed: ${error.message}`);
+      await this.logFailedTransaction(paymentData, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Validate payment data structure and values
+   */
+  validatePaymentData(data) {
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid payment data');
+    }
+
+    if (!data.userId || typeof data.userId !== 'string') {
+      throw new Error('Invalid user ID');
+    }
+
+    if (typeof data.amount !== 'number' || isNaN(data.amount) || data.amount < this.minAmount || data.amount > this.maxAmount) {
+      throw new Error('Invalid amount');
+    }
+
+    if (!data.currency || !/^[A-Z]{3}$/.test(data.currency)) {
+      throw new Error('Invalid currency code');
+    }
+
+    if (!data.paymentMethod || typeof data.paymentMethod !== 'string') {
+      throw new Error('Invalid payment method');
+    }
+  }
+
   /**
    * Check if user has sufficient balance and hasn't exceeded limits
    */
@@ -29,7 +130,7 @@
    */
   async executePaymentWithRetry(user, paymentData) {
     let lastError;
-    
+
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       try {
         logger.info(`Payment attempt ${attempt}/${this.maxRetries}`);
@@ -47,7 +148,7 @@
 
       } catch (error) {
         lastError = error;
-        
+
         // Don't retry on permanent failures
         if (this.isPermanentError(error)) {
           throw error;
@@ -69,23 +170,9 @@
    * Determine if error is permanent (don't retry) or transient (can retry)
    */
   isPermanentError(error) {
-    const permanentErrors = [
-      'invalid_card',
-      'card_declined',
-      'insufficient_funds',
-      'invalid_amount',
-      'authentication_required'
-    ];
-
-    return permanentErrors.some(code => 
-      error.message.toLowerCase().includes(code) || 
-      error.code === code
-    );
+    const permanentErrors = ['invalid_card', 'card_declined', 'insufficient_funds', 'invalid_amount'];
+    return permanentErrors.some(code => error.message.toLowerCase().includes(code) || error.code === code);
   }
-
-  /**
-   * Update user account after successful payment
-   */
   async updateUserAccount(user, transaction) {
     const updates = {
       lastTransactionId: transaction.id,
@@ -109,46 +196,24 @@
   async sendNotifications(user, transaction) {
     const promises = [];
 
-    // Email notification
     if (user.email && user.preferences?.emailNotifications) {
-      promises.push(
-        notificationService.sendEmail({
-          to: user.email,
-          subject: 'Payment Confirmation',
-          template: 'payment-success',
-          data: {
-            userName: user.name,
-            amount: transaction.amount,
-            currency: transaction.currency,
-            transactionId: transaction.id
-          }
-        })
-      );
+      promises.push(notificationService.sendEmail({
+        to: user.email,
+        subject: 'Payment Confirmation',
+        template: 'payment-success',
+        data: { userName: user.name, amount: transaction.amount, currency: transaction.currency, transactionId: transaction.id }
+      }));
     }
 
-    // SMS notification for large amounts
-    if (user.phone && transaction.amount > 1000) {
-      promises.push(
-        notificationService.sendSMS({
-          to: user.phone,
-          message: `Payment of ${transaction.amount} ${transaction.currency} processed successfully. ID: ${transaction.id}`
-        })
-      );
-    }
-
-    // Push notification
     if (user.deviceTokens?.length > 0) {
-      promises.push(
-        notificationService.sendPush({
-          tokens: user.deviceTokens,
-          title: 'Payment Successful',
-          body: `Your payment of ${transaction.amount} ${transaction.currency} was processed`,
-          data: { transactionId: transaction.id }
-        })
-      );
+      promises.push(notificationService.sendPush({
+        tokens: user.deviceTokens,
+        title: 'Payment Successful',
+        body: `Your payment of ${transaction.amount} ${transaction.currency} was processed`,
+        data: { transactionId: transaction.id }
+      }));
     }
 
-    // Don't fail the payment if notifications fail
     await Promise.allSettled(promises);
   }
 
@@ -156,7 +221,6 @@
    * Handle fraudulent transaction detection
    */
   async handleFraudulentTransaction(user, paymentData, fraudScore) {
-    // Log fraud attempt
     await dbClient.logFraudAttempt({
       userId: user.id,
       paymentData,
@@ -166,21 +230,13 @@
       deviceId: paymentData.metadata?.deviceId
     });
 
-    // Notify security team
     await notificationService.sendEmail({
       to: 'security@company.com',
       subject: 'Fraud Alert',
       template: 'fraud-detection',
-      data: {
-        userId: user.id,
-        userName: user.name,
-        amount: paymentData.amount,
-        fraudScore,
-        timestamp: new Date()
-      }
+      data: { userId: user.id, userName: user.name, amount: paymentData.amount, fraudScore, timestamp: new Date() }
     });
 
-    // Suspend user if fraud score is very high
     if (fraudScore > 0.95) {
       await dbClient.updateUser(user.id, { status: 'suspended' });
       logger.warn(`User ${user.id} suspended due to high fraud score: ${fraudScore}`);
@@ -212,60 +268,6 @@
   sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
-
-  /**
-   * Refund a payment
-   */
-  async refundPayment(transactionId, reason) {
-    const transaction = await dbClient.getTransaction(transactionId);
-    
-    if (!transaction) {
-      throw new Error('Transaction not found');
-    }
-
-    if (transaction.status === 'refunded') {
-      throw new Error('Transaction already refunded');
-    }
-
-    const refund = await paymentGateway.refund({
-      transactionId: transaction.id,
-      amount: transaction.amount,
-      reason
-    });
-
-    await dbClient.updateTransaction(transactionId, {
-      status: 'refunded',
-      refundId: refund.id,
-      refundDate: new Date()
-    });
-
-    const user = await dbClient.getUser(transaction.userId);
-    await this.sendRefundNotification(user, transaction, refund);
-
-    return refund;
-  }
-
-  /**
-   * Send refund notification
-   */
-  async sendRefundNotification(user, transaction, refund) {
-    if (user.email) {
-      await notificationService.sendEmail({
-        to: user.email,
-        subject: 'Refund Processed',
-        template: 'refund-confirmation',
-        data: {
-          userName: user.name,
-          amount: refund.amount,
-          currency: refund.currency,
-          originalTransactionId: transaction.id,
-          refundId: refund.id
-        }
-      });
-    }
-  }
 }
 
 module.exports = PaymentProcessor;
-
-// Made with Bob

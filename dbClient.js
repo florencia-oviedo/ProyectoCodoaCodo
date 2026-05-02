@@ -3,8 +3,38 @@
 class DBClient {
   constructor() {
     this.users = new Map([
-      ['user1', { id: 'user1', name: 'John Doe', tier: 'VIP' }],
-      ['user2', { id: 'user2', name: 'Jane Smith', tier: 'regular' }]
+      ['user1', {
+        id: 'user1',
+        name: 'John Doe',
+        tier: 'VIP',
+        status: 'active',
+        dailyLimit: 1000,
+        monthlyLimit: 5000,
+        accountType: 'debit',
+        balance: 500,
+        email: 'john@example.com',
+        preferences: { emailNotifications: true },
+        deviceTokens: ['token1'],
+        transactionHistory: [{ amount: 100 }, { amount: 50 }],
+        totalSpent: 150,
+        transactionCount: 2
+      }],
+      ['user2', {
+        id: 'user2',
+        name: 'Jane Smith',
+        tier: 'regular',
+        status: 'active',
+        dailyLimit: 500,
+        monthlyLimit: 2000,
+        accountType: 'credit',
+        balance: 0,
+        email: 'jane@example.com',
+        preferences: { emailNotifications: false },
+        deviceTokens: [],
+        transactionHistory: [],
+        totalSpent: 0,
+        transactionCount: 0
+      }]
     ]);
 
     this.products = new Map([
@@ -44,6 +74,47 @@ class DBClient {
     const orderId = 'ORD-' + Date.now();
     this.orders.push({ id: orderId, ...orderData });
     return orderId;
+  }
+
+  async getUserTransactionsToday(userId) {
+    // Simular transacciones de hoy
+    return [
+      { amount: 50 },
+      { amount: 25 }
+    ];
+  }
+
+  async getUserTransactionsThisMonth(userId) {
+    // Simular transacciones del mes
+    return [
+      { amount: 100 },
+      { amount: 75 },
+      { amount: 200 }
+    ];
+  }
+
+  async updateUser(userId, updates) {
+    const user = this.users.get(userId);
+    if (!user) {
+      throw new Error('Usuario no encontrado');
+    }
+    Object.assign(user, updates);
+    this.users.set(userId, user);
+  }
+
+  async saveTransaction(transaction) {
+    // Simular guardar transacción
+    console.log('Transaction saved:', transaction.id);
+  }
+
+  async logFraudAttempt(fraudData) {
+    // Simular logging de intento de fraude
+    console.log('Fraud attempt logged:', fraudData.userId);
+  }
+
+  async saveFailedTransaction(failedData) {
+    // Simular guardar transacción fallida
+    console.log('Failed transaction saved:', failedData.userId);
   }
 }
 
