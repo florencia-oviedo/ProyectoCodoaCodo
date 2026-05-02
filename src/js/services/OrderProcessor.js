@@ -11,11 +11,8 @@ class OrderProcessor {
     this.fraudDetector = new FraudDetector();
   }
 
-  /**
-   * Check if user has sufficient balance and hasn't exceeded limits
-   */
-  async checkUserLimits(user, amount) {
-    // Check daily limit
+
+  static async checkUserLimits(user, amount) {
     const todayTransactions = await dbClient.getUserTransactionsToday(user.id);
     const todayTotal = todayTransactions.reduce((sum, t) => sum + t.amount, 0);
 
@@ -23,7 +20,6 @@ class OrderProcessor {
       throw new Error('Daily transaction limit exceeded');
     }
 
-    // Check monthly limit
     const monthTransactions = await dbClient.getUserTransactionsThisMonth(user.id);
     const monthTotal = monthTransactions.reduce((sum, t) => sum + t.amount, 0);
 
@@ -31,12 +27,10 @@ class OrderProcessor {
       throw new Error('Monthly transaction limit exceeded');
     }
 
-    // Check account balance for debit transactions
     if (user.accountType === 'debit' && user.balance < amount) {
       throw new Error('Insufficient funds');
     }
   }
-
   /**
    * Execute payment with automatic retry on transient failures
    */
@@ -48,6 +42,8 @@ class OrderProcessor {
     if (typeof userOrId === 'string') {
       user = await dbClient.getUser(userOrId);
     }
+    // Llamamos a la validación estática internamente
+    await OrderProcessor.checkUserLimits(user, paymentData.amount);
 
     // 11. Profile Integrity Check (KYC Compliance)
     // Ensures the user has a verified email and phone before processing payments
@@ -77,6 +73,14 @@ class OrderProcessor {
     if (!clearingSupported.includes(paymentData.currency)) {
       logger.error(`Compliance Error: Unsupported currency ${paymentData.currency} for user ${user.id}`);
       throw new Error(`UNSUPPORTED_CURRENCY: ${paymentData.currency} is not allowed for this region.`);
+    }
+
+    // 15. Transaction ID Format Validation (Source Integrity)
+    // Ensures the idempotency key follows the expected internal banking prefix
+    const EXPECTED_PREFIX = 'TXN-';
+    if (!paymentData.idempotencyKey.startsWith(EXPECTED_PREFIX)) {
+      logger.warn(`Security Warning: Invalid transaction format from user ${user.id}. Key: ${paymentData.idempotencyKey}`);
+      throw new Error('INVALID_FORMAT: Transaction key must start with the authorized prefix TXN-.');
     }
     
     // 1. Integrity Validation: Ensure idempotency and required data
